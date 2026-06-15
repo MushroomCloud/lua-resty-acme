@@ -1,3 +1,12 @@
+<a name="0.18.0"></a>
+## [0.18.0] - 2026-06-15
+### bug fixes
+- **storage/redis:** reuse connections via set_keepalive so certificate renewal no longer exhausts ephemeral ports at scale (connect() failing with EADDRNOTAVAIL / "cannot assign requested address") [17446d4](https://github.com/ashleykleynhans/lua-resty-acme/commit/17446d4)
+
+### features
+- **storage/redis:** maintain a secondary index of keys so list() no longer scans the entire keyspace, turning renewal enumeration from O(total keys) into O(managed keys); includes transparent one-time backfill for existing deployments and a use_index opt-out [17446d4](https://github.com/ashleykleynhans/lua-resty-acme/commit/17446d4)
+
+
 <a name="0.17.0"></a>
 ## [0.17.0] - 2026-04-07
 ### bug fixes
@@ -334,6 +343,7 @@
 - **crypto:** ffi openssl supports generating ec certificates [bc9d989](https://github.com/ashleykleynhans/lua-resty-acme/commit/bc9d989b4eb8bfa954f2f1ab08b0449957a27402)
 
 
+[0.18.0]: https://github.com/ashleykleynhans/lua-resty-acme/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/ashleykleynhans/lua-resty-acme/compare/0.16.0...v0.17.0
 [0.16.0]: https://github.com/fffonion/lua-resty-acme/compare/0.15.0...0.16.0
 [0.15.0]: https://github.com/fffonion/lua-resty-acme/compare/0.14.0...0.15.0
