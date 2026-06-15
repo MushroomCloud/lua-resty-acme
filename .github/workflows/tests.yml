@@ -193,6 +193,6 @@ jobs:
 
     - name: Show logs
       if: failure()
-      run: |
-        pushd t/fixtures
-        docker compose logs
+      continue-on-error: true
+      working-directory: t/fixtures
+      run: docker compose logs
