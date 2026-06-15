@@ -724,3 +724,76 @@ nil
 "authentication failed WRONGPASS"
 --- no_error_log
 [error]
+
+=== TEST 23: Redis delete removes the key from the index
+--- http_config eval: $::HttpConfig
+--- config
+    location =/t {
+        content_by_lua_block {
+            local st = test_lib.new({namespace = "del_idx"})
+            st:set("k1", "v")
+            st:set("k2", "v")
+            local keys = st:list("k")
+            table.sort(keys)
+            for _, p in ipairs(keys) do ngx.say(p) end
+            ngx.say("--")
+            st:delete("k1")
+            keys = st:list("k")
+            table.sort(keys)
+            for _, p in ipairs(keys) do ngx.say(p) end
+        }
+    }
+--- request
+    GET /t
+--- response_body
+k1
+k2
+--
+k2
+--- no_error_log
+[error]
+
+=== TEST 24: Redis list falls back to keyspace scan when use_index = false
+--- http_config eval: $::HttpConfig
+--- config
+    location =/t {
+        content_by_lua_block {
+            local st = test_lib.new({namespace = "noidx", use_index = false})
+            st:set("k1", "v")
+            st:set("k2", "v")
+            local keys = st:list("k")
+            table.sort(keys)
+            for _, p in ipairs(keys) do ngx.say(p) end
+        }
+    }
+--- request
+    GET /t
+--- response_body
+k1
+k2
+--- no_error_log
+[error]
+
+=== TEST 25: Redis index backfills pre-existing (un-indexed) keys on first list
+--- http_config eval: $::HttpConfig
+--- config
+    location =/t {
+        content_by_lua_block {
+            -- simulate a pre-upgrade deployment: keys written without the index
+            local old = test_lib.new({namespace = "bf", use_index = false})
+            old:set("domain:a", "v")
+            old:set("domain:b", "v")
+            -- upgrade: index enabled, first list() backfills from the keyspace
+            local st = test_lib.new({namespace = "bf"})
+            local keys = st:list("domain:")
+            table.sort(keys)
+            for _, p in ipairs(keys) do ngx.say(p) end
+        }
+    }
+--- request
+    GET /t
+--- response_body
+domain:a
+domain:b
+--- no_error_log
+[error]
