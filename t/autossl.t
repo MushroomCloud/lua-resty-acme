@@ -100,3 +100,36 @@ namespace can't be prefixed with reserved word: failed_attempts:
 --- error_code: 200
 --- no_error_log
 [error]
+
+=== TEST 9: delete_domain removes cert and failure-tracking keys
+--- http_config eval: $::HttpConfig
+--- config
+    location /t {
+        content_by_lua_block {
+            local autossl = require("resty.acme.autossl")
+            autossl.init({
+                tos_accepted = true,
+                account_email = "you@example.com",
+                domain_whitelist = { "dead.example.com" },
+                domain_key_types = { "rsa" },
+                max_renewal_failures = 5,
+                storage_adapter = "redis",
+                storage_config = { namespace = "deltest" },
+            })
+            local d = "dead.example.com"
+            autossl.storage:set("domain:rsa:" .. d, "certblob")
+            autossl.storage:set("failed_attempts:" .. d, 5)
+            autossl.storage:set("failure_lock:" .. d, 123)
+            autossl.delete_domain(d)
+            local cert = autossl.storage:get("domain:rsa:" .. d)
+            local attempts = autossl.storage:get("failed_attempts:" .. d)
+            local lock = autossl.storage:get("failure_lock:" .. d)
+            ngx.say("cert=", tostring(cert), " attempts=", tostring(attempts), " lock=", tostring(lock))
+        }
+    }
+--- request
+    GET /t
+--- response_body
+cert=nil attempts=nil lock=nil
+--- no_error_log
+[error]

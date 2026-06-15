@@ -60,6 +60,10 @@ local default_config = {
   blocking = false,
   -- if true, the certificate for domain not in whitelist will be deleted from storage
   enabled_delete_not_whitelisted_domain = false,
+  -- if > 0, delete a domain's cert from storage after this many consecutive
+  -- renewal failures so we stop retrying unresolvable domains; the cert is
+  -- re-created on demand if the domain resolves again later
+  max_renewal_failures = 0,
   -- the dict of dns providers, each provider should have following struct:
   -- {
   --   name = "prod_account",
@@ -320,6 +324,21 @@ function AUTOSSL.update_cert(data)
   return err
 end
 
+-- Delete all stored keys for a domain: every cert type plus the failure
+-- tracking keys. Used to stop retrying a domain that keeps failing to renew
+-- (e.g. its DNS no longer resolves). The cert is re-created on demand by
+-- ssl_certificate_by_lua if the domain resolves again later.
+function AUTOSSL.delete_domain(domain)
+  for _, typ in ipairs(AUTOSSL.config.domain_key_types) do
+    local err = AUTOSSL.storage:delete(domain_cache_key_prefix .. typ .. ":" .. domain)
+    if err then
+      log(ngx_ERR, "failed to delete ", typ, " cert for domain ", domain, " error: ", err)
+    end
+  end
+  AUTOSSL.storage:delete(certificate_failure_count_prefix .. domain)
+  AUTOSSL.storage:delete(certificate_failure_lock_key_prefix .. domain)
+end
+
 function AUTOSSL.check_renew(premature)
 
   -- According to docs in https://github.com/openresty/lua-nginx-module#ngxtimerat, a premature
@@ -380,6 +399,16 @@ function AUTOSSL.check_renew(premature)
 
       if err then
         log(ngx_ERR, "failed to renew certificate for domain ", domain, " error: ", err)
+
+        local max_failures = AUTOSSL.config.max_renewal_failures
+        if max_failures and max_failures > 0 then
+          local count = tonumber(AUTOSSL.storage:get(certificate_failure_count_prefix .. domain)) or 0
+          if count >= max_failures then
+            AUTOSSL.delete_domain(domain)
+            log(ngx_WARN, "deleted certificate for domain ", domain, " after ", count,
+              " consecutive renewal failures; it will be re-created on demand if it resolves again")
+          end
+        end
       else
         log(ngx_INFO, "successfully renewed ", deserialized.type, " cert for domain ", domain)
       end
