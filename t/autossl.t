@@ -116,6 +116,10 @@ namespace can't be prefixed with reserved word: failed_attempts:
                 storage_adapter = "redis",
                 storage_config = { namespace = "deltest" },
             })
+            -- wire up storage the same way init_worker() does, without the
+            -- account-key load and renewal timer
+            local storagemod = require(autossl.config.storage_adapter)
+            autossl.storage = storagemod.new(autossl.config.storage_config)
             local d = "dead.example.com"
             autossl.storage:set("domain:rsa:" .. d, "certblob")
             autossl.storage:set("failed_attempts:" .. d, 5)
