@@ -1,3 +1,9 @@
+<a name="0.19.0"></a>
+## [0.19.0] - 2026-06-15
+### features
+- **autossl:** add `max_renewal_failures` to delete a domain from storage after that many consecutive renewal failures, so the renewal loop stops retrying unresolvable domains (e.g. whitelabel domains whose DNS no longer resolves) and stops burning Let's Encrypt failed-validation budget; the cert is re-created on demand if the domain resolves again later (default 0 = disabled) [ab39682](https://github.com/ashleykleynhans/lua-resty-acme/commit/ab39682)
+
+
 <a name="0.18.0"></a>
 ## [0.18.0] - 2026-06-15
 ### bug fixes
@@ -343,6 +349,7 @@
 - **crypto:** ffi openssl supports generating ec certificates [bc9d989](https://github.com/ashleykleynhans/lua-resty-acme/commit/bc9d989b4eb8bfa954f2f1ab08b0449957a27402)
 
 
+[0.19.0]: https://github.com/ashleykleynhans/lua-resty-acme/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/ashleykleynhans/lua-resty-acme/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/ashleykleynhans/lua-resty-acme/compare/0.16.0...v0.17.0
 [0.16.0]: https://github.com/fffonion/lua-resty-acme/compare/0.15.0...0.16.0
