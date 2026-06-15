@@ -34,7 +34,9 @@ services:
         ipv4_address: 10.30.50.4
 
   vault:
-    image: hashicorp/vault
+    # Pinned: hashicorp/vault:latest drifted to a release whose dev-mode +
+    # custom TLS listener no longer starts cleanly, breaking the Vault tests.
+    image: hashicorp/vault:1.18
     user: root
     cap_add:
       - IPC_LOCK
